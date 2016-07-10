@@ -8,17 +8,17 @@ require 'yaml/store'
 
 
 sunpower_credentials = YAML.load_file File.join(Dir.home, '.credentials', "sunpower.yaml")
+api_base_url = "https://monitor.us.sunpower.com/CustomerPortal/"
 
-uri = URI.parse("https://monitor.us.sunpower.com/CustomerPortal/Auth/Auth.svc/Authenticate")
-http = Net::HTTP.new(uri.hostname, uri.port)
+uri = URI.parse(api_base_url + "Auth/Auth.svc/Authenticate")
+http = Net::HTTP.new uri.hostname, uri.port
 http.use_ssl = true
-response = http.send_request('POST', uri.path, sunpower_credentials.to_json,
-                             {'Content-Type' => 'application/json'})
-puts response.body
-decoded = JSON.parse response.body
+auth_response = http.send_request 'POST', uri.path, sunpower_credentials.to_json, {'Content-Type' => 'application/json'}
+puts auth_response.body
+decoded = JSON.parse auth_response.body
 
-content = open("https://monitor.us.sunpower.com/CustomerPortal/CurrentPower/CurrentPower.svc/GetCurrentPower?id=#{decoded['Payload']['TokenID']}").read
-puts content
-decoded = JSON.parse content
+current_power_response = open(api_base_url + "CurrentPower/CurrentPower.svc/GetCurrentPower?id=#{decoded['Payload']['TokenID']}").read
+puts current_power_response
+decoded = JSON.parse current_power_response
 puts "#{decoded['Payload']['CurrentProduction']}kW"
 puts "#{decoded['Payload']['SystemList'][0]['DateTimeReceived']}"
