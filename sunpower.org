@@ -1,0 +1,99 @@
+#+TITLE: Sunpower
+#+DESCRIPTION: Unofficial tests of apparent Sunpower API
+
+* API
+** API point: https://monitor.us.sunpower.com/CustomerPortal
+
+** Services mapped from [[https://monitor.us.sunpower.com/v06232016102250/C:/Program Files (x86)/Jenkins/workspace/SunpowerSpa-Master/src/scripts/config/dataServices/dataServices.js][dataServices.js]]:
+#+BEGIN_SRC javascript
+AUTH: 'Auth/Auth.svc/',
+AUTHENTICATION: 'Auth/Authentication.svc/',
+SYSTEM_INFO: 'SystemInfo/SystemInfo.svc/',
+CURRENT_POWER: 'CurrentPower/CurrentPower.svc/',
+SITE_INFO: 'SiteInfo/SiteInfo.svc/',
+ALERTS_INFO: 'AlertsInfo/AlertsInfo.svc/',
+ALERTS: 'Alerts/Alerts.svc/',
+NOTIFY: 'Notify/Notify.svc/',
+BILL_SAVINGS: 'BillSavings/BillSavings.svc/',
+CUSTOMER_INFO: 'CustomerInfo/CustomerInfo.svc/',
+SITE_LIST: 'SiteList/SiteList.svc/',
+CONFIG: 'Config/Config.svc/',
+REFERRALS: 'Referrals/Referrals.svc/',
+SCHEDULE: 'Schedule/Schedule.svc/'
+#+END_SRC
+
+** Notable services
+https://monitor.us.sunpower.com/CustomerPortal/Auth/Auth.svc/help
+https://monitor.us.sunpower.com/CustomerPortal/Auth/Auth.svc/help/operations/Authenticate
+https://monitor.us.sunpower.com/CustomerPortal/CurrentPower/CurrentPower.svc/help
+https://monitor.us.sunpower.com/CustomerPortal/CurrentPower/CurrentPower.svc/help/operations/GetCurrentPower
+
+* Real time net display
+** Helpers
+*** Example credentials file
+#+BEGIN_SRC yaml
+---
+username: "username"
+password: "password"
+isPersistent: true
+#+END_SRC
+
+*** get credentials
+#+NAME: get-credentials
+#+BEGIN_SRC ruby :results raw silent :var file="/home/jeff/.credentials/sunpower.yaml"
+  require 'yaml'
+  require 'json'
+  p YAML.load_file(file).to_json
+#+END_SRC
+
+*** get json value
+#+NAME: get-json-value
+#+BEGIN_SRC ruby :results raw silent :var string="" :var name=""
+require 'json'
+result = JSON.parse(string)
+name.split('.').each { |key| result = result[key] }
+p result
+#+END_SRC
+
+*** pretty-print json
+#+NAME: jq
+#+BEGIN_SRC emacs-lisp :var data=""
+  (json-reformat-from-string data)
+#+END_SRC
+
+** Authenticate
+
+#+NAME: Authenticate
+#+BEGIN_SRC bash  :results raw replace drawer :var credentials=get-credentials(file="/home/jeff/.credentials/sunpower.yaml")
+curl -H "Content-Type:application/json" -X POST -d "$credentials" https://monitor.us.sunpower.com/CustomerPortal/Auth/Auth.svc/Authenticate
+#+END_SRC
+
+#+RESULTS: Authenticate
+:RESULTS:
+{"StatusCode":"200","ResponseMessage":"Success","Payload":{"ExpiresInMinutes":259199,"TokenID":"c6d435f9-0de3-47ac-99bd-9798ee2f206c"}}
+:END:
+
+** Get Current Power
+
+#+NAME: CurrentPower
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="Payload.TokenID") :post jq(data=*this*)
+curl --silent "https://monitor.us.sunpower.com/CustomerPortal/CurrentPower/CurrentPower.svc/GetCurrentPower?id=$token"
+#+END_SRC
+
+#+RESULTS: CurrentPower
+:RESULTS:
+{
+    "StatusCode": "200",
+    "ResponseMessage": "Success",
+    "Payload": {
+        "AddressId": 91299,
+        "CurrentProduction": 2.914,
+        "SystemList": [
+            {
+                "DateTimeReceived": "2016-07-10T14:35:00",
+                "Production": 2.914
+            }
+        ]
+    }
+}
+:END:
