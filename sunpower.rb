@@ -61,4 +61,4 @@ end
 TIMESTAMP = '2000-01-01T00:00:00' # long ago
 hourly_energy_data = open(api_base_url + "SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=#{tokenid}&timestamp=#{TIMESTAMP}").read
 energy_data = csvToHashtable hourly_energy_data
-puts "Lifetime energy = #{energy_data.map{ |date, values| values[:ep] }.reduce(0, :+)} kWh"
+puts "Lifetime energy = #{energy_data.map{ |_date, values| values[:ep] }.reduce(0, :+)} kWh"
