@@ -1,6 +1,8 @@
 #+TITLE: Sunpower
 #+DESCRIPTION: Unofficial tests of apparent Sunpower API
 
+[[https://codeclimate.com/github/jeffkowalski/sunpower/badges/gpa.svg]]
+
 * API
 ** API point: https://monitor.us.sunpower.com/CustomerPortal
 
