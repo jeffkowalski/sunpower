@@ -1,5 +1,7 @@
 source 'https://rubygems.org'
+
 gem 'json'
+gem 'rest-client'
 
 # for robe:
 gem 'pry'
