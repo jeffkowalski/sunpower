@@ -6,6 +6,7 @@ GEM
       unf (>= 0.0.5, < 1.0.0)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
+    influxdb (0.6.1)
     json (2.1.0)
     method_source (0.9.0)
     mime-types (3.2.2)
@@ -31,6 +32,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  influxdb
   json
   method_source (>= 0.8.2)
   pry
@@ -38,4 +40,4 @@ DEPENDENCIES
   rest-client
 
 BUNDLED WITH
-   1.16.4
+   1.16.6
