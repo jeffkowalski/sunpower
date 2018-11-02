@@ -23,6 +23,7 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
+    thor (0.20.0)
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.7.5)
@@ -38,6 +39,7 @@ DEPENDENCIES
   pry
   pry-doc (>= 0.6.0)
   rest-client
+  thor
 
 BUNDLED WITH
-   1.16.6
+   1.17.1
