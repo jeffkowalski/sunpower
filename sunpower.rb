@@ -89,7 +89,7 @@ class Sunpower < Thor
     end
   }
 
-  class_option :log,     :type => :boolean, :default => true, :desc => "log output to ~/.rainforest.log"
+  class_option :log,     :type => :boolean, :default => true, :desc => "log output to #{LOGFILE}"
   class_option :verbose, :type => :boolean, :aliases => "-v", :desc => "increase verbosity"
 
   desc "describe-status", "describe the current state of the solar panel array"
