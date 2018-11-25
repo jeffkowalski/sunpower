@@ -39,16 +39,18 @@ class Sunpower < Thor
     def setup_logger
       redirect_output if options[:log]
 
-      $logger = Logger.new STDOUT
-      $logger.level = options[:verbose] ? Logger::DEBUG : Logger::INFO
-      $logger.info 'starting'
+      @logger = Logger.new STDOUT
+      @logger.level = options[:verbose] ? Logger::DEBUG : Logger::INFO
+      @logger.info 'starting'
     end
   end
 
   no_commands do
     def authorize
       sunpower_credentials = YAML.load_file CREDENTIALS_PATH
-      response = RestClient.post "#{API_BASE_URL}/Auth/Auth.svc/Authenticate", sunpower_credentials.to_json, 'Content-Type' => 'application/json'
+      response = RestClient.post "#{API_BASE_URL}/Auth/Auth.svc/Authenticate",
+                                 sunpower_credentials.to_json,
+                                 'Content-Type' => 'application/json'
       authorization = JSON.parse response
       tokenid = authorization['Payload']['TokenID']
       tokenid
@@ -56,16 +58,18 @@ class Sunpower < Thor
 
     def get_current_power(tokenid)
       response = RestClient.get "#{API_BASE_URL}/CurrentPower/CurrentPower.svc/GetCurrentPower?id=#{tokenid}"
-      $logger.info response
+      @logger.info response
       power = JSON.parse response
       power
     end
+  end
 
+  no_commands do
     # similar to https://monitor.us.sunpower.com/v08042016054226/C:/Program Files (x86)/Jenkins/workspace/SunpowerSpa-Development/src/scripts/modules/lifetimeEnergy/lifetimeEnergyService.js#574
-    def csvToHashtable(csvData)
-      return nil if csvData.nil? || !csvData.length
+    def csv_to_hash_table(csv_data)
+      return nil if csv_data.nil? || !csv_data.length
 
-      rows = csvData.split('|')
+      rows = csv_data.split('|')
 
       # remove first row if contains column names
       rows.shift unless rows[0][0].numeric?
@@ -100,8 +104,9 @@ class Sunpower < Thor
     puts "#{power['Payload']['CurrentProduction']}kW at #{power['Payload']['SystemList'][0]['DateTimeReceived']}"
 
     hourly_energy_data = RestClient.get "#{API_BASE_URL}/SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=#{tokenid}&timestamp=#{TIMESTAMP}"
-    energy_data = csvToHashtable hourly_energy_data
-    puts "Lifetime energy = #{energy_data.map { |_date, values| values[:ep] }.reduce(0, :+)} kWh"
+    energy_data = csv_to_hash_table hourly_energy_data
+    lifetime_energy = energy_data.map { |_date, values| values[:ep] }.reduce(0, :+)
+    puts "Lifetime energy = #{lifetime_energy} kWh"
   end
 
   desc 'record-status', 'record the current state of the pool to database'
