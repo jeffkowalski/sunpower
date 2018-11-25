@@ -120,7 +120,7 @@ class Sunpower < Thor
 
     data = {
       values: { value: power['Payload']['CurrentProduction'].to_f },
-      timestamp: (Time.parse power['Payload']['SystemList'][0]['DateTimeReceived']).to_i - Time.now.utc_offset
+      timestamp: (Time.parse power['Payload']['SystemList'][0]['DateTimeReceived']).to_i
     }
     influxdb.write_point('production', data)
   end
