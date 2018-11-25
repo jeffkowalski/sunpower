@@ -8,27 +8,28 @@ require 'json'
 require 'yaml'
 require 'influxdb'
 
-
 LOGFILE = File.join(Dir.home, '.log', 'sunpower.log')
-CREDENTIALS_PATH = File.join(Dir.home, '.credentials', "sunpower.yaml")
+CREDENTIALS_PATH = File.join(Dir.home, '.credentials', 'sunpower.yaml')
 
-TIMESTAMP = '2000-01-01T00:00:00' # long ago
-API_BASE_URL = "https://monitor.us.sunpower.com/CustomerPortal"
+TIMESTAMP = '2000-01-01T00:00:00'.freeze # long ago
+API_BASE_URL = 'https://monitor.us.sunpower.com/CustomerPortal'.freeze
 
 class String
   def numeric?
-    Float(self) != nil rescue false
+    !Float(self).nil?
+  rescue StandardError
+    false
   end
 end
 
 class Sunpower < Thor
-  no_commands {
+  no_commands do
     def redirect_output
       unless LOGFILE == 'STDOUT'
         logfile = File.expand_path(LOGFILE)
-        FileUtils.mkdir_p(File.dirname(logfile), :mode => 0755)
+        FileUtils.mkdir_p(File.dirname(logfile), mode: 0o755)
         FileUtils.touch logfile
-        File.chmod 0644, logfile
+        File.chmod 0o644, logfile
         $stdout.reopen logfile, 'a'
       end
       $stderr.reopen $stdout
@@ -42,57 +43,55 @@ class Sunpower < Thor
       $logger.level = options[:verbose] ? Logger::DEBUG : Logger::INFO
       $logger.info 'starting'
     end
-  }
+  end
 
-  no_commands {
+  no_commands do
     def authorize
       sunpower_credentials = YAML.load_file CREDENTIALS_PATH
-      response = RestClient.post "#{API_BASE_URL}/Auth/Auth.svc/Authenticate", sunpower_credentials.to_json, {'Content-Type' => 'application/json'}
+      response = RestClient.post "#{API_BASE_URL}/Auth/Auth.svc/Authenticate", sunpower_credentials.to_json, 'Content-Type' => 'application/json'
       authorization = JSON.parse response
       tokenid = authorization['Payload']['TokenID']
-      return tokenid
+      tokenid
     end
 
-    def get_current_power tokenid
+    def get_current_power(tokenid)
       response = RestClient.get "#{API_BASE_URL}/CurrentPower/CurrentPower.svc/GetCurrentPower?id=#{tokenid}"
       $logger.info response
       power = JSON.parse response
-      return power
+      power
     end
 
     # similar to https://monitor.us.sunpower.com/v08042016054226/C:/Program Files (x86)/Jenkins/workspace/SunpowerSpa-Development/src/scripts/modules/lifetimeEnergy/lifetimeEnergyService.js#574
-    def csvToHashtable csvData
-      if csvData.nil? or !csvData.length
-        return nil
-      end
+    def csvToHashtable(csvData)
+      return nil if csvData.nil? || !csvData.length
 
       rows = csvData.split('|')
 
       # remove first row if contains column names
-      rows.shift() unless rows[0][0].numeric?
-      rows.pop() unless rows[rows.length - 1].length
+      rows.shift unless rows[0][0].numeric?
+      rows.pop unless rows[rows.length - 1].length
 
       # now create hashtable from array
       obj = {}
-      rows.each { |row|
+      rows.each do |row|
         a = row.split(',')
-        if (a[0].length > 10)
-          obj[a[0]] = {
-            :ep => a[1].to_f,
-            :eu => a[2].to_f,
-            :mp => a[3].to_f,
-            :i => 3600
-          }
-        end
-      }
-      return obj
+        next unless a[0].length > 10
+
+        obj[a[0]] = {
+          ep: a[1].to_f,
+          eu: a[2].to_f,
+          mp: a[3].to_f,
+          i: 3600
+        }
+      end
+      obj
     end
-  }
+  end
 
-  class_option :log,     :type => :boolean, :default => true, :desc => "log output to #{LOGFILE}"
-  class_option :verbose, :type => :boolean, :aliases => "-v", :desc => "increase verbosity"
+  class_option :log,     type: :boolean, default: true, desc: "log output to #{LOGFILE}"
+  class_option :verbose, type: :boolean, aliases: '-v', desc: 'increase verbosity'
 
-  desc "describe-status", "describe the current state of the solar panel array"
+  desc 'describe-status', 'describe the current state of the solar panel array'
   def describe_status
     setup_logger
 
@@ -102,10 +101,10 @@ class Sunpower < Thor
 
     hourly_energy_data = RestClient.get "#{API_BASE_URL}/SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=#{tokenid}&timestamp=#{TIMESTAMP}"
     energy_data = csvToHashtable hourly_energy_data
-    puts "Lifetime energy = #{energy_data.map{ |_date, values| values[:ep] }.reduce(0, :+)} kWh"
+    puts "Lifetime energy = #{energy_data.map { |_date, values| values[:ep] }.reduce(0, :+)} kWh"
   end
 
-  desc "record-status", "record the current state of the pool to database"
+  desc 'record-status', 'record the current state of the pool to database'
   def record_status
     setup_logger
 
@@ -116,12 +115,10 @@ class Sunpower < Thor
 
     data = {
       values: { value: power['Payload']['CurrentProduction'].to_f },
-      timestamp: (DateTime.parse power['Payload']['SystemList'][0]['DateTimeReceived']).to_time.to_i - Time.now.utc_offset
+      timestamp: (Time.parse power['Payload']['SystemList'][0]['DateTimeReceived']).to_i - Time.now.utc_offset
     }
     influxdb.write_point('production', data)
-
   end
-
 end
 
 Sunpower.start
