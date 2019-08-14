@@ -27,7 +27,7 @@ GEM
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.7.5)
-    yard (0.9.16)
+    yard (0.9.20)
 
 PLATFORMS
   ruby
