@@ -11,8 +11,7 @@ require 'influxdb'
 LOGFILE = File.join(Dir.home, '.log', 'sunpower.log')
 CREDENTIALS_PATH = File.join(Dir.home, '.credentials', 'sunpower.yaml')
 
-TIMESTAMP = '2000-01-01T00:00:00'.freeze # long ago
-API_BASE_URL = 'https://monitor.us.sunpower.com/CustomerPortal'.freeze
+API_BASE_URL = 'https://elhapi.edp.sunpower.com/v1/elh'.freeze
 
 class String
   def numeric?
@@ -48,47 +47,25 @@ class Sunpower < Thor
   no_commands do
     def authorize
       sunpower_credentials = YAML.load_file CREDENTIALS_PATH
-      response = RestClient.post "#{API_BASE_URL}/Auth/Auth.svc/Authenticate",
+      response = RestClient.post "#{API_BASE_URL}/authenticate",
                                  sunpower_credentials.to_json,
                                  'Content-Type' => 'application/json'
       authorization = JSON.parse response
-      tokenid = authorization['Payload']['TokenID']
-      tokenid
+      @logger.debug authorization
+      authorization
     end
 
-    def get_current_power(tokenid)
-      response = RestClient.get "#{API_BASE_URL}/CurrentPower/CurrentPower.svc/GetCurrentPower?id=#{tokenid}"
+    def get_current_power(authorization)
+      response = RestClient.get "#{API_BASE_URL}/address/#{authorization['addressId']}/power",
+                                {:Authorization => "SP-CUSTOM #{authorization['tokenID']}",
+                                 :params => {:async => false}}
+      @logger.debug response.headers
       @logger.info response
       power = JSON.parse response
+      # TODO: find the actual date of the reading
+      # this hack below is certainly incorrect
+      power['Date'] = response.headers[:date]
       power
-    end
-  end
-
-  no_commands do
-    # similar to https://monitor.us.sunpower.com/v08042016054226/C:/Program Files (x86)/Jenkins/workspace/SunpowerSpa-Development/src/scripts/modules/lifetimeEnergy/lifetimeEnergyService.js#574
-    def csv_to_hash_table(csv_data)
-      return nil if csv_data.nil? || !csv_data.length
-
-      rows = csv_data.split('|')
-
-      # remove first row if contains column names
-      rows.shift unless rows[0][0].numeric?
-      rows.pop unless rows[rows.length - 1].length
-
-      # now create hashtable from array
-      obj = {}
-      rows.each do |row|
-        a = row.split(',')
-        next unless a[0].length > 10
-
-        obj[a[0]] = {
-          ep: a[1].to_f,
-          eu: a[2].to_f,
-          mp: a[3].to_f,
-          i: 3600
-        }
-      end
-      obj
     end
   end
 
@@ -99,28 +76,28 @@ class Sunpower < Thor
   def describe_status
     setup_logger
 
-    tokenid = authorize
-    power = get_current_power tokenid
-    puts "#{power['Payload']['CurrentProduction']}kW at #{power['Payload']['SystemList'][0]['DateTimeReceived']}"
+    authorization = authorize
+    power = get_current_power authorization
+    puts "#{power['CurrentProduction']}kW at #{power['Date']}"
 
-    hourly_energy_data = RestClient.get "#{API_BASE_URL}/SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=#{tokenid}&timestamp=#{TIMESTAMP}"
-    energy_data = csv_to_hash_table hourly_energy_data
-    lifetime_energy = energy_data.map { |_date, values| values[:ep] }.reduce(0, :+)
-    puts "Lifetime energy = #{lifetime_energy} kWh"
+#    hourly_energy_data = RestClient.get "#{API_BASE_URL}/SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=#{tokenid}&timestamp=#{TIMESTAMP}"
+#    energy_data = csv_to_hash_table hourly_energy_data
+#    lifetime_energy = energy_data.map { |_date, values| values[:ep] }.reduce(0, :+)
+#    puts "Lifetime energy = #{lifetime_energy} kWh"
   end
 
-  desc 'record-status', 'record the current state of the pool to database'
+  desc 'record-status', 'record the current solar production to database'
   def record_status
     setup_logger
 
-    tokenid = authorize
-    power = get_current_power tokenid
+    authorization = authorize
+    power = get_current_power authorization
 
     influxdb = InfluxDB::Client.new 'sunpower'
 
     data = {
-      values: { value: power['Payload']['CurrentProduction'].to_f },
-      timestamp: (Time.parse power['Payload']['SystemList'][0]['DateTimeReceived']).to_i
+      values: { value: power['CurrentProduction'].to_f },
+      timestamp: (Time.parse power['Date']).to_i
     }
     influxdb.write_point('production', data)
   end

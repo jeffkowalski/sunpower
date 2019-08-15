@@ -3,34 +3,37 @@
 
 [[https://codeclimate.com/github/jeffkowalski/sunpower/badges/gpa.svg]]
 
-* API
-** API point: https://monitor.us.sunpower.com/CustomerPortal
-
-** Services mapped from [[https://monitor.us.sunpower.com/v06232016102250/C:/Program Files (x86)/Jenkins/workspace/SunpowerSpa-Master/src/scripts/config/dataServices/dataServices.js][dataServices.js]]:
+* API points
+** from [[https://monitor.us.sunpower.com/v08122019100840/environment.js][environment.js]]
 #+BEGIN_SRC javascript
-AUTH: 'Auth/Auth.svc/',
-AUTHENTICATION: 'Auth/Authentication.svc/',
-SYSTEM_INFO: 'SystemInfo/SystemInfo.svc/',
-CURRENT_POWER: 'CurrentPower/CurrentPower.svc/',
-SITE_INFO: 'SiteInfo/SiteInfo.svc/',
-ALERTS_INFO: 'AlertsInfo/AlertsInfo.svc/',
-ALERTS: 'Alerts/Alerts.svc/',
-NOTIFY: 'Notify/Notify.svc/',
-BILL_SAVINGS: 'BillSavings/BillSavings.svc/',
-CUSTOMER_INFO: 'CustomerInfo/CustomerInfo.svc/',
-SITE_LIST: 'SiteList/SiteList.svc/',
-CONFIG: 'Config/Config.svc/',
-REFERRALS: 'Referrals/Referrals.svc/',
-SCHEDULE: 'Schedule/Schedule.svc/'
+w.__envapidom = 'https://elhapi.edp.sunpower.com/';
 #+END_SRC
 
-** Notable services
-https://monitor.us.sunpower.com/CustomerPortal/Auth/Auth.svc/help
-https://monitor.us.sunpower.com/CustomerPortal/Auth/Auth.svc/help/operations/Authenticate
-https://monitor.us.sunpower.com/CustomerPortal/CurrentPower/CurrentPower.svc/help
-https://monitor.us.sunpower.com/CustomerPortal/CurrentPower/CurrentPower.svc/help/operations/GetCurrentPower
-https://monitor.us.sunpower.com/CustomerPortal/SystemInfo/SystemInfo.svc/help
-https://monitor.us.sunpower.com/CustomerPortal/SystemInfo/SystemInfo.svc/help/operations/getHourlyEnergyData
+** from [[https://monitor.us.sunpower.com/v08122019100840/envcfg.js][envcfg.js]]:
+#+BEGIN_SRC javascript
+SP_ELH_VERSION: 'SP_ELH_VERSION_1', // SP_ELH_VERSION must match SP_ELH_VERSION lambda variable in ElhApi cloudformation
+ELH_API_USER: w.__envapidom + 'v1/elh/user/',
+ELH_API_ADDRESS: w.__envapidom + 'v1/elh/address/',
+ELH_API_ASYNC_RESULT: w.__envapidom + 'v1/elh/asyncResult',
+ELH_API_PASSWORD_RESET: w.__envapidom + 'v1/elh/passwordreset/',
+ELH_API_AUTHENTICATE: w.__envapidom + 'v1/elh/authenticate',
+ELH_API_SESSION: w.__envapidom + 'v1/elh/session',
+ELH_API_AUTHENTICATEKIOSK: w.__envapidom + 'v1/elh/authenticatekiosk',
+ELH_API_FEEDBACK: w.__envapidom + 'v1/elh/processFeedback',
+ELH_API_CHECK_EMAIL: w.__envapidom + 'v1/elh/register/checkEmail',
+ELP_API_VALIDATE_SN: w.__envapidom + 'v1/elh/register/validateSerial/',
+ELH_API_CREATE_ACCOUNT: w.__envapidom + 'v1/elh/register/createAccount',
+ELH_API_SEND_ACCOUNT_NOTIFICATION: w.__envapidom + 'v1/elh/register/sendAccountNotification',
+ELH_API_VALIDATE_EMAIL: w.__envapidom + 'v1/elh/register/validateEmail',
+ELH_API_COLLECTOR: w.__envapidom + 'v1/elh/wifi/collector',
+ELH_API_DEVICE_STATUS: w.__envapidom + 'v1/elh/wifi/status',
+ELH_API_WIFI_NETWORKS: w.__envapidom + 'v1/elh/wifi/networks',
+ELH_API_SET_WIFI_NETWORK: w.__envapidom + 'v1/elh/wifi/setNetwork',
+ELH_API_SET_WIFI_NETWORK_STATUS: w.__envapidom + 'v1/elh/wifi/setNetwork/status',
+ELH_API_TOU: w.__envapidom + 'v1/elh/tou',
+ELH_API_SET_TOU: w.__envapidom + 'v1/elh/setTou',
+ELH_API_REFERRAL: w.__envapidom + 'v1/elh/referral'
+#+END_SRC
 
 * Real time net display
 ** Helpers
@@ -45,9 +48,9 @@ isPersistent: true
 *** get credentials
 #+NAME: get-credentials
 #+BEGIN_SRC ruby :results raw silent :var file="/home/jeff/.credentials/sunpower.yaml"
-  require 'yaml'
-  require 'json'
-  p YAML.load_file(file).to_json
+require 'yaml'
+require 'json'
+p YAML.load_file(file).to_json
 #+END_SRC
 
 *** get json value
@@ -62,65 +65,192 @@ p result
 *** pretty-print json
 #+NAME: jq
 #+BEGIN_SRC emacs-lisp :var data=""
-  (json-reformat-from-string data)
+(json-reformat-from-string data)
 #+END_SRC
 
 ** Authenticate
-
 #+NAME: Authenticate
-#+BEGIN_SRC bash  :results raw replace drawer :var credentials=get-credentials(file="/home/jeff/.credentials/sunpower.yaml")
-curl -H "Content-Type:application/json" -X POST -d "$credentials" https://monitor.us.sunpower.com/CustomerPortal/Auth/Auth.svc/Authenticate
+#+BEGIN_SRC bash  :results raw replace drawer :var credentials=get-credentials(file="/home/jeff/.credentials/sunpower.yaml") :var api="https://elhapi.edp.sunpower.com/v1/elh"
+curl -H "Content-Type:application/json" -X POST -d "$credentials" "$api/authenticate"
 #+END_SRC
 
 #+RESULTS: Authenticate
-:RESULTS:
-{"StatusCode":"200","ResponseMessage":"Success","Payload":{"ExpiresInMinutes":259199,"TokenID":"c6d435f9-0de3-47ac-99bd-9798ee2f206c"}}
-:END:
 
-** Get Current Power
-
-#+NAME: CurrentPower
-#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="Payload.TokenID") :post jq(data=*this*)
-curl --silent "https://monitor.us.sunpower.com/CustomerPortal/CurrentPower/CurrentPower.svc/GetCurrentPower?id=$token"
+** Get Address Activity
+#+NAME: AddressActivity
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var address=get-json-value(string=Authenticate,name="addressId") :var api="https://elhapi.edp.sunpower.com/v1/elh" :post jq(data=*this*)
+curl --silent --header "Authorization: SP-CUSTOM $token" "$api/address/$address/activity?async=false"
 #+END_SRC
 
-#+RESULTS: CurrentPower
-:RESULTS:
+#+RESULTS: AddressActivity
+:results:
+1565836800000
+:end:
+
+** Get Address Alerts
+#+NAME: Alerts
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var address=get-json-value(string=Authenticate,name="addressId") :var api="https://elhapi.edp.sunpower.com/v1/elh" :post jq(data=*this*)
+curl --silent --header "Authorization: SP-CUSTOM $token" "$api/address/$address/alerts?async=false"
+#+END_SRC
+
+#+RESULTS: Alerts
+:results:
+[]
+:end:
+
+** Get Address Components
+#+NAME: Components
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var address=get-json-value(string=Authenticate,name="addressId") :var api="https://elhapi.edp.sunpower.com/v1/elh" :post jq(data=*this*)
+curl --silent --header "Authorization: SP-CUSTOM $token" "$api/address/$address/components"
+#+END_SRC
+
+#+RESULTS: Components
+
+** Get Address Power
+Returns the "current" power.  The time of the reading is not specified, and I've noticed these are often quite stale.
+
+#+NAME: AddressPower
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var address=get-json-value(string=Authenticate,name="addressId") :var api="https://elhapi.edp.sunpower.com/v1/elh" :post jq(data=*this*)
+curl --silent --header "Authorization: SP-CUSTOM $token" "$api/address/$address/power?async=false"
+#+END_SRC
+
+#+RESULTS: AddressPower
+:results:
 {
-    "StatusCode": "200",
-    "ResponseMessage": "Success",
-    "Payload": {
-        "AddressId": 91299,
-        "CurrentProduction": 2.914,
-        "SystemList": [
-            {
-                "DateTimeReceived": "2016-07-10T14:35:00",
-                "Production": 2.914
-            }
-        ]
-    }
+    "CurrentConsumption": 0,
+    "CurrentProduction": 3.096
 }
-:END:
+:end:
 
-** Get Hourly Energy Data
-
-#+NAME: HourlyEnergyData
-#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="Payload.TokenID") :post jq(data=*this*)
-curl --silent "https://monitor.us.sunpower.com/CustomerPortal/SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=$token&timestamp=2016-08-08T00:00:00"
+** Get Address Energy Hour
+#+NAME: AddressEnergyHour
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var address=get-json-value(string=Authenticate,name="addressId") :var api="https://elhapi.edp.sunpower.com/v1/elh" :post jq(data=*this*)
+curl --silent --header "Authorization: SP-CUSTOM $token" "$api/address/$address/energy/hour?async=false&startepm=1565805600000"
 #+END_SRC
 
-The payload is string with an array of "|"-delimited records.
+#+RESULTS: AddressEnergyHour
+:results:
+[
+    "2019-08-14T11:00:00,4.95,",
+    "2019-08-14T12:00:00,5.83,",
+    "2019-08-14T13:00:00,5.78,",
+    "2019-08-14T14:00:00,6.40,",
+    "2019-08-14T15:00:00,6.69,",
+    "2019-08-14T17:00:00,9.27,",
+    "2019-08-14T18:00:00,1.88,",
+    "2019-08-14T19:00:00,1.60,"
+]
+:end:
+
+
+The payload is an array of string records.
 Each record has the following comma-separated fields:
-| bt | timestamp of sample | YYYY-MM-DDTHH:MM:SS |
-| ep | energy produced     | _float_ kWh         |
-| eu | energy used         | _float_             |
-| mp | _unknown_           | _float_             |
+| timestamp of sample | YYYY-MM-DDTHH:MM:SS |
+| energy produced     | _float_ kWh         |
 
-#+RESULTS: HourlyEnergyData
-:RESULTS:
-{
-    "StatusCode": "200",
-    "ResponseMessage": "Success",
-    "Payload": "2016-08-07T06:00:00,0,0,0.04|2016-08-07T07:00:00,0.12,0,0.2|2016-08-07T08:00:00,0.37,0,0.53|2016-08-07T09:00:00,0.82,0,1.44|2016-08-07T10:00:00,2.27,0,4.01|2016-08-07T11:00:00,3.7,0,3.83|2016-08-07T12:00:00,3.76,0,3.83|2016-08-07T13:00:00,3.52,0,3.67|2016-08-07T14:00:00,3.06,0,3.31|2016-08-07T15:00:00,2.41,0,2.75|2016-08-07T16:00:00,1.56,0,1.97|2016-08-07T17:00:00,0.62,0,1.04|2016-08-07T18:00:00,0.14,0,0.2|2016-08-07T19:00:00,0.06,0,0.11|2016-08-07T20:00:00,0,0,0|2016-08-08T06:00:00,0,0,0.03|2016-08-08T07:00:00,0.12,0,0.25|2016-08-08T08:00:00,0.46,0,0.7|2016-08-08T09:00:00,1.76,0,3.31|2016-08-08T10:00:00,3.48,0,3.63|2016-08-08T11:00:00,3.7,0,3.74|2016-08-08T12:00:00,3.68,0,3.73|2016-08-08T13:00:00,3.44,0,3.58|2016-08-08T14:00:00,2.99,0,3.22|2016-08-08T15:00:00,2.36,0,2.68|2016-08-08T16:00:00,1.52,0,1.92|2016-08-08T17:00:00,0.6,0,1|2016-08-08T18:00:00,0.14,0,0.19|2016-08-08T19:00:00,0.07,0,0.11|2016-08-08T20:00:00,0,0,0|2016-08-09T06:00:00,0,0,0.04|2016-08-09T07:00:00,0.15,0,0.3|2016-08-09T08:00:00,0.48,0,0.68|2016-08-09T09:00:00,2.12,0,3.25|2016-08-09T10:00:00,3.43,0,3.58|2016-08-09T11:00:00,3.65,0,3.72|2016-08-09T12:00:00,3.68,0,3.73|2016-08-09T13:00:00,3.47,0,3.62|2016-08-09T14:00:00,3.01,0,3.25|2016-08-09T15:00:00,2.38,0,2.71|2016-08-09T16:00:00,1.54,0,1.95|2016-08-09T17:00:00,0.6,0,1|2016-08-09T18:00:00,0.14,0,0.19|2016-08-09T19:00:00,0.02,0,0.11"
-}
-:END:
+** Get Address Energy Minute
+#+NAME: AddressEnergyMinute
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var address=get-json-value(string=Authenticate,name="addressId") :var api="https://elhapi.edp.sunpower.com/v1/elh" :post jq(data=*this*)
+curl --silent --header "Authorization: SP-CUSTOM $token" "$api/address/$address/energy/minute?endepm=1565827200000&startepm=1565740800000"
+#+END_SRC
+
+#+RESULTS: AddressEnergyMinute
+:results:
+[
+    "2019-08-14T00:10:00,0.00,",
+    "2019-08-14T00:15:00,0.00,",
+    "2019-08-14T00:25:00,0.00,",
+    "2019-08-14T00:30:00,0.00,",
+    "2019-08-14T00:35:00,0.00,",
+    "2019-08-14T00:40:00,0.00,",
+    "2019-08-14T00:50:00,0.00,",
+    "2019-08-14T00:55:00,0.00,",
+    "2019-08-14T01:10:00,0.00,",
+    "2019-08-14T01:20:00,0.00,",
+    "2019-08-14T01:25:00,0.00,",
+    "2019-08-14T01:30:00,0.00,",
+    "2019-08-14T01:35:00,0.00,",
+    "2019-08-14T01:40:00,0.00,",
+    "2019-08-14T01:45:00,0.00,",
+    "2019-08-14T01:50:00,0.00,",
+    "2019-08-14T02:00:00,0.00,",
+    "2019-08-14T02:05:00,0.00,",
+    "2019-08-14T02:15:00,0.00,",
+    "2019-08-14T02:25:00,0.00,",
+    "2019-08-14T02:30:00,0.00,",
+    "2019-08-14T02:35:00,0.00,",
+    "2019-08-14T02:50:00,0.00,",
+    "2019-08-14T02:55:00,0.00,",
+    "2019-08-14T03:20:00,0.00,",
+    "2019-08-14T03:25:00,0.00,",
+    "2019-08-14T03:30:00,0.00,",
+    "2019-08-14T03:35:00,0.00,",
+    "2019-08-14T03:50:00,0.00,",
+    "2019-08-14T03:55:00,0.00,",
+    "2019-08-14T04:00:00,0.00,",
+    "2019-08-14T04:15:00,0.00,",
+    "2019-08-14T05:15:00,0.00,",
+    "2019-08-14T05:20:00,0.00,",
+    "2019-08-14T05:25:00,0.00,",
+    "2019-08-14T05:55:00,0.00,",
+    "2019-08-14T06:05:00,0.00,",
+    "2019-08-14T07:00:00,0.01,",
+    "2019-08-14T07:05:00,0.01,",
+    "2019-08-14T07:20:00,0.03,",
+    "2019-08-14T07:25:00,0.02,",
+    "2019-08-14T07:30:00,0.02,",
+    "2019-08-14T07:35:00,0.02,",
+    "2019-08-14T07:40:00,0.01,",
+    "2019-08-14T08:50:00,0.73,",
+    "2019-08-14T08:55:00,0.11,",
+    "2019-08-14T09:05:00,0.12,",
+    "2019-08-14T09:15:00,0.25,",
+    "2019-08-14T09:20:00,0.14,",
+    "2019-08-14T09:25:00,0.14,",
+    "2019-08-14T09:30:00,0.14,",
+    "2019-08-14T09:45:00,0.16,",
+    "2019-08-14T09:50:00,0.16,",
+    "2019-08-14T10:05:00,0.55,",
+    "2019-08-14T10:25:00,0.94,",
+    "2019-08-14T10:30:00,0.28,",
+    "2019-08-14T10:50:00,1.28,",
+    "2019-08-14T10:55:00,0.35,",
+    "2019-08-14T11:05:00,0.75,",
+    "2019-08-14T11:25:00,0.41,",
+    "2019-08-14T11:35:00,0.84,",
+    "2019-08-14T11:50:00,1.31,",
+    "2019-08-14T12:40:00,4.77,",
+    "2019-08-14T12:45:00,0.50,",
+    "2019-08-14T13:05:00,2.04,",
+    "2019-08-14T13:10:00,0.52,",
+    "2019-08-14T13:15:00,0.52,",
+    "2019-08-14T13:20:00,0.53,",
+    "2019-08-14T13:25:00,0.53,",
+    "2019-08-14T13:30:00,0.53,",
+    "2019-08-14T13:35:00,0.53,",
+    "2019-08-14T14:50:00,8.00,",
+    "2019-08-14T15:00:00,1.05,",
+    "2019-08-14T15:30:00,3.11,",
+    "2019-08-14T15:35:00,0.51,",
+    "2019-08-14T17:10:00,6.54,",
+    "2019-08-14T17:30:00,1.44,",
+    "2019-08-14T17:35:00,0.34,",
+    "2019-08-14T17:40:00,0.33,",
+    "2019-08-14T17:50:00,0.62,",
+    "2019-08-14T18:00:00,0.59,",
+    "2019-08-14T18:25:00,1.29,"
+]
+:end:
+
+The payload is an array of string records.
+Each record has the following comma-separated fields:
+| timestamp of sample | YYYY-MM-DDTHH:MM:SS |
+| energy produced     | _float_ kWh         |
+
+** Get WiFi Status (Device Status)
+#+NAME: WiFiStatus
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var address=get-json-value(string=Authenticate,name="addressId") :var api="https://elhapi.edp.sunpower.com/v1/elh" :post jq(data=*this*)
+curl --silent --header "Authorization: SP-CUSTOM $token" "$api/wifi/status?cacheBreaker=1565824273640&serialNumber=ZT163185000441C1876"
+#+END_SRC
+
+#+RESULTS: WiFiStatus
