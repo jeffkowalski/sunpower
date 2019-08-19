@@ -254,3 +254,12 @@ curl --silent --header "Authorization: SP-CUSTOM $token" "$api/wifi/status?cache
 #+END_SRC
 
 #+RESULTS: WiFiStatus
+** Session Logout
+#+NAME: SessionLogout
+#+BEGIN_SRC sh :results raw replace drawer :var token=get-json-value(string=Authenticate,name="tokenID") :var api="https://elhapi.edp.sunpower.com/v1/elh"
+curl --silent -X DELETE --header "Authorization: SP-CUSTOM $token" "$api/session"
+#+END_SRC
+
+#+RESULTS: SessionLogout
+:results:
+:end:
