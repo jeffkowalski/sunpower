@@ -9,30 +9,33 @@
 w.__envapidom = 'https://elhapi.edp.sunpower.com/';
 #+END_SRC
 
-** from [[https://monitor.us.sunpower.com/v08122019100840/envcfg.js][envcfg.js]]:
+** from [[https://monitor.us.sunpower.com/v10162019041847/envcfg.js][envcfg.js]]:
 #+BEGIN_SRC javascript
-SP_ELH_VERSION: 'SP_ELH_VERSION_1', // SP_ELH_VERSION must match SP_ELH_VERSION lambda variable in ElhApi cloudformation
-ELH_API_USER: w.__envapidom + 'v1/elh/user/',
-ELH_API_ADDRESS: w.__envapidom + 'v1/elh/address/',
-ELH_API_ASYNC_RESULT: w.__envapidom + 'v1/elh/asyncResult',
-ELH_API_PASSWORD_RESET: w.__envapidom + 'v1/elh/passwordreset/',
-ELH_API_AUTHENTICATE: w.__envapidom + 'v1/elh/authenticate',
-ELH_API_SESSION: w.__envapidom + 'v1/elh/session',
-ELH_API_AUTHENTICATEKIOSK: w.__envapidom + 'v1/elh/authenticatekiosk',
-ELH_API_FEEDBACK: w.__envapidom + 'v1/elh/processFeedback',
-ELH_API_CHECK_EMAIL: w.__envapidom + 'v1/elh/register/checkEmail',
-ELP_API_VALIDATE_SN: w.__envapidom + 'v1/elh/register/validateSerial/',
-ELH_API_CREATE_ACCOUNT: w.__envapidom + 'v1/elh/register/createAccount',
-ELH_API_SEND_ACCOUNT_NOTIFICATION: w.__envapidom + 'v1/elh/register/sendAccountNotification',
-ELH_API_VALIDATE_EMAIL: w.__envapidom + 'v1/elh/register/validateEmail',
-ELH_API_COLLECTOR: w.__envapidom + 'v1/elh/wifi/collector',
-ELH_API_DEVICE_STATUS: w.__envapidom + 'v1/elh/wifi/status',
-ELH_API_WIFI_NETWORKS: w.__envapidom + 'v1/elh/wifi/networks',
-ELH_API_SET_WIFI_NETWORK: w.__envapidom + 'v1/elh/wifi/setNetwork',
-ELH_API_SET_WIFI_NETWORK_STATUS: w.__envapidom + 'v1/elh/wifi/setNetwork/status',
-ELH_API_TOU: w.__envapidom + 'v1/elh/tou',
-ELH_API_SET_TOU: w.__envapidom + 'v1/elh/setTou',
-ELH_API_REFERRAL: w.__envapidom + 'v1/elh/referral'
+__env = {
+    SP_ELH_VERSION: 'SP_ELH_VERSION_2', // SP_ELH_VERSION must match SP_ELH_VERSION lambda variable in ElhApi cloudformation
+    ELH_API_USER: w.__envapidom + 'v1/elh/user/',
+    ELH_API_ADDRESS: w.__envapidom + 'v1/elh/address/',
+    ELH_API_ADDRESS_V2: w.__envapidom + 'v2/elh/address/',
+    ELH_API_ASYNC_RESULT: w.__envapidom + 'v1/elh/asyncResult',
+    ELH_API_PASSWORD_RESET: w.__envapidom + 'v1/elh/passwordreset/',
+    ELH_API_AUTHENTICATE: w.__envapidom + 'v1/elh/authenticate',
+    ELH_API_SESSION: w.__envapidom + 'v1/elh/session',
+    ELH_API_AUTHENTICATEKIOSK: w.__envapidom + 'v1/elh/authenticatekiosk',
+    ELH_API_FEEDBACK: w.__envapidom + 'v1/elh/processFeedback',
+    ELH_API_CHECK_EMAIL: w.__envapidom + 'v1/elh/register/checkEmail',
+    ELP_API_VALIDATE_SN: w.__envapidom + 'v1/elh/register/validateSerial/',
+    ELH_API_CREATE_ACCOUNT: w.__envapidom + 'v1/elh/register/createAccount',
+    ELH_API_SEND_ACCOUNT_NOTIFICATION: w.__envapidom + 'v1/elh/register/sendAccountNotification',
+    ELH_API_VALIDATE_EMAIL: w.__envapidom + 'v1/elh/register/validateEmail',
+    ELH_API_COLLECTOR: w.__envapidom + 'v1/elh/wifi/collector',
+    ELH_API_DEVICE_STATUS: w.__envapidom + 'v1/elh/wifi/status',
+    ELH_API_WIFI_NETWORKS: w.__envapidom + 'v1/elh/wifi/networks',
+    ELH_API_SET_WIFI_NETWORK: w.__envapidom + 'v1/elh/wifi/setNetwork',
+    ELH_API_SET_WIFI_NETWORK_STATUS: w.__envapidom + 'v1/elh/wifi/setNetwork/status',
+    ELH_API_TOU: w.__envapidom + 'v1/elh/tou',
+    ELH_API_SET_TOU: w.__envapidom + 'v1/elh/setTou',
+    ELH_API_REFERRAL: w.__envapidom + 'v1/elh/referral'
+};
 #+END_SRC
 
 * Real time net display
