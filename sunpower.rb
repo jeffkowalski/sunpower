@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require 'thor'
 require 'fileutils'
@@ -11,7 +12,7 @@ require 'influxdb'
 LOGFILE = File.join(Dir.home, '.log', 'sunpower.log')
 CREDENTIALS_PATH = File.join(Dir.home, '.credentials', 'sunpower.yaml')
 
-API_BASE_URL = 'https://elhapi.edp.sunpower.com/v1/elh'.freeze
+API_BASE_URL = 'https://elhapi.edp.sunpower.com/v1/elh'
 
 class String
   def numeric?
@@ -57,8 +58,8 @@ class Sunpower < Thor
 
     def get_current_power(authorization)
       response = RestClient.get "#{API_BASE_URL}/address/#{authorization['addressId']}/power",
-                                {:Authorization => "SP-CUSTOM #{authorization['tokenID']}",
-                                 :params => {:async => false}}
+                                Authorization: "SP-CUSTOM #{authorization['tokenID']}",
+                                params: { async: false }
       @logger.debug response.headers
       @logger.info response
       power = JSON.parse response
@@ -80,26 +81,30 @@ class Sunpower < Thor
     power = get_current_power authorization
     puts "#{power['CurrentProduction']}kW at #{power['Date']}"
 
-#    hourly_energy_data = RestClient.get "#{API_BASE_URL}/SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=#{tokenid}&timestamp=#{TIMESTAMP}"
-#    energy_data = csv_to_hash_table hourly_energy_data
-#    lifetime_energy = energy_data.map { |_date, values| values[:ep] }.reduce(0, :+)
-#    puts "Lifetime energy = #{lifetime_energy} kWh"
+    #    hourly_energy_data = RestClient.get "#{API_BASE_URL}/SystemInfo/SystemInfo.svc/getHourlyEnergyData?tokenid=#{tokenid}&timestamp=#{TIMESTAMP}"
+    #    energy_data = csv_to_hash_table hourly_energy_data
+    #    lifetime_energy = energy_data.map { |_date, values| values[:ep] }.reduce(0, :+)
+    #    puts "Lifetime energy = #{lifetime_energy} kWh"
   end
 
   desc 'record-status', 'record the current solar production to database'
+  method_option :dry_run, type: :boolean, aliases: '-d', desc: 'do not write to database'
   def record_status
     setup_logger
+    begin
+      authorization = authorize
+      power = get_current_power authorization
 
-    authorization = authorize
-    power = get_current_power authorization
+      influxdb = InfluxDB::Client.new 'sunpower'
 
-    influxdb = InfluxDB::Client.new 'sunpower'
-
-    data = {
-      values: { value: power['CurrentProduction'].to_f },
-      timestamp: (Time.parse power['Date']).to_i
-    }
-    influxdb.write_point('production', data)
+      data = {
+        values: { value: power['CurrentProduction'].to_f },
+        timestamp: (Time.parse power['Date']).to_i
+      }
+      influxdb.write_point('production', data) unless options[:dry_run]
+    rescue StandardError => e
+      @logger.error e
+    end
   end
 end
 
