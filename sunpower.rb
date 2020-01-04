@@ -14,6 +14,21 @@ CREDENTIALS_PATH = File.join(Dir.home, '.credentials', 'sunpower.yaml')
 
 API_BASE_URL = 'https://elhapi.edp.sunpower.com/v1/elh'
 
+module Kernel
+  def with_rescue(exceptions, logger, retries: 5)
+    try = 0
+    begin
+      yield try
+    rescue *exceptions => e
+      try += 1
+      raise if try > retries
+
+      logger.info "caught error #{e.class}, retrying (#{try}/#{retries})..."
+      retry
+    end
+  end
+end
+
 class String
   def numeric?
     !Float(self).nil?
@@ -93,7 +108,9 @@ class Sunpower < Thor
     setup_logger
     begin
       authorization = authorize
-      power = get_current_power authorization
+      power = with_rescue([RestClient::GatewayTimeout], @logger) do |_try|
+        get_current_power authorization
+      end
 
       influxdb = InfluxDB::Client.new 'sunpower'
 
