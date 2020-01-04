@@ -29,7 +29,7 @@ GEM
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.7.6)
-    yard (0.9.20)
+    yard (0.9.22)
 
 PLATFORMS
   ruby
@@ -44,4 +44,4 @@ DEPENDENCIES
   thor
 
 BUNDLED WITH
-   2.1.2
+   2.1.3
