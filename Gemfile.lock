@@ -1,3 +1,9 @@
+GIT
+  remote: https://github.com/jeffkowalski/influxdb-ruby.git
+  revision: 1cfcc503b96b7e275a7f629def3a42d7357d9b93
+  specs:
+    influxdb (0.7.1)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -7,7 +13,6 @@ GEM
     http-accept (1.7.0)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
-    influxdb (0.7.0)
     json (2.3.0)
     method_source (0.9.2)
     mime-types (3.3.1)
@@ -35,7 +40,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  influxdb
+  influxdb!
   json
   method_source (>= 0.8.2)
   pry
