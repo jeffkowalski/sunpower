@@ -1,4 +1,10 @@
+AllCops:
+  TargetRubyVersion: 2.7
+
 Layout/EmptyLines:
+  Enabled: false
+
+Layout/LineLength:
   Enabled: false
 
 Metrics/AbcSize:
@@ -11,9 +17,6 @@ Metrics/ClassLength:
   Enabled: false
 
 Metrics/CyclomaticComplexity:
-  Enabled: false
-
-Metrics/LineLength:
   Enabled: false
 
 Metrics/MethodLength:
