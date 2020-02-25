@@ -107,7 +107,7 @@ class Sunpower < Thor
   def record_status
     setup_logger
     begin
-      power = with_rescue([RestClient::GatewayTimeout, RestClient::Exceptions::OpenTimeout, RestClient::InternalServerError], @logger) do |_try|
+      power = with_rescue([RestClient::GatewayTimeout, RestClient::Exceptions::OpenTimeout, RestClient::InternalServerError], @logger, 6) do |_try|
         authorization = authorize
         get_current_power authorization
       end
