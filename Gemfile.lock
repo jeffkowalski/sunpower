@@ -38,6 +38,7 @@ GEM
 
 PLATFORMS
   ruby
+  x86_64-linux
 
 DEPENDENCIES
   influxdb!
@@ -49,4 +50,4 @@ DEPENDENCIES
   thor
 
 BUNDLED WITH
-   2.1.3
+   2.2.0
