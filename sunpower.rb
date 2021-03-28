@@ -72,9 +72,11 @@ class Sunpower < Thor
     end
 
     def get_current_power(authorization)
-      response = RestClient.get "#{API_BASE_URL}/address/#{authorization['addressId']}/power",
-                                Authorization: "SP-CUSTOM #{authorization['tokenID']}",
-                                params: { async: false }
+      response = with_rescue([RestClient::Unauthorized], @logger) do |_try|
+        RestClient.get "#{API_BASE_URL}/address/#{authorization['addressId']}/power",
+                       Authorization: "SP-CUSTOM #{authorization['tokenID']}",
+                       params: { async: false }
+      end
       @logger.debug response.headers
       @logger.info response
       power = JSON.parse response
