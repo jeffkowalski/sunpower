@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-gem 'influxdb', git: 'https://github.com/jeffkowalski/influxdb-ruby.git'
+gem 'influxdb'
 gem 'json'
 gem 'rest-client'
 gem 'thor'
