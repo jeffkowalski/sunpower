@@ -1,33 +1,11 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'thor'
-require 'fileutils'
-require 'logger'
-require 'rest-client'
-require 'json'
-require 'yaml'
-require 'influxdb'
-
-LOGFILE = File.join(Dir.home, '.log', 'sunpower.log')
-CREDENTIALS_PATH = File.join(Dir.home, '.credentials', 'sunpower.yaml')
+require 'rubygems'
+require 'bundler/setup'
+Bundler.require(:default)
 
 API_BASE_URL = 'https://elhapi.edp.sunpower.com/v1/elh'
-
-module Kernel
-  def with_rescue(exceptions, logger, retries: 5)
-    try = 0
-    begin
-      yield try
-    rescue *exceptions => e
-      try += 1
-      raise if try > retries
-
-      logger.info "caught error #{e.class}, retrying (#{try}/#{retries})..."
-      retry
-    end
-  end
-end
 
 class String
   def numeric?
@@ -37,32 +15,10 @@ class String
   end
 end
 
-class Sunpower < Thor
-  no_commands do
-    def redirect_output
-      unless LOGFILE == 'STDOUT'
-        logfile = File.expand_path(LOGFILE)
-        FileUtils.mkdir_p(File.dirname(logfile), mode: 0o755)
-        FileUtils.touch logfile
-        File.chmod 0o644, logfile
-        $stdout.reopen logfile, 'a'
-      end
-      $stderr.reopen $stdout
-      $stdout.sync = $stderr.sync = true
-    end
-
-    def setup_logger
-      redirect_output if options[:log]
-
-      @logger = Logger.new STDOUT
-      @logger.level = options[:verbose] ? Logger::DEBUG : Logger::INFO
-      @logger.info 'starting'
-    end
-  end
-
+class Sunpower < RecorderBotBase
   no_commands do
     def authorize
-      sunpower_credentials = YAML.load_file CREDENTIALS_PATH
+      sunpower_credentials = load_credentials
       response = RestClient.post "#{API_BASE_URL}/authenticate",
                                  sunpower_credentials.to_json,
                                  'Content-Type' => 'application/json'
@@ -87,13 +43,8 @@ class Sunpower < Thor
     end
   end
 
-  class_option :log,     type: :boolean, default: true, desc: "log output to #{LOGFILE}"
-  class_option :verbose, type: :boolean, aliases: '-v', desc: 'increase verbosity'
-
   desc 'describe-status', 'describe the current state of the solar panel array'
   def describe_status
-    setup_logger
-
     authorization = authorize
     power = get_current_power authorization
     puts "#{power['CurrentProduction']}kW at #{power['Date']}"
@@ -104,11 +55,8 @@ class Sunpower < Thor
     #    puts "Lifetime energy = #{lifetime_energy} kWh"
   end
 
-  desc 'record-status', 'record the current solar production to database'
-  method_option :dry_run, type: :boolean, aliases: '-d', desc: 'do not write to database'
-  def record_status
-    setup_logger
-    begin
+  no_commands do
+    def main
       power = with_rescue([RestClient::GatewayTimeout, RestClient::Exceptions::OpenTimeout, RestClient::InternalServerError], @logger, retries: 6) do |_try|
         authorization = authorize
         get_current_power authorization
@@ -121,8 +69,6 @@ class Sunpower < Thor
         timestamp: (Time.parse power['Date']).to_i
       }
       influxdb.write_point('production', data) unless options[:dry_run]
-    rescue StandardError => e
-      @logger.error e
     end
   end
 end
