@@ -62,13 +62,11 @@ class Sunpower < RecorderBotBase
         get_current_power authorization
       end
 
-      influxdb = InfluxDB::Client.new 'sunpower'
-
-      data = {
-        values: { value: power['CurrentProduction'].to_f },
-        timestamp: (Time.parse power['Date']).to_i
-      }
-      influxdb.write_point('production', data) unless options[:dry_run]
+      influxdb = InfluxDB::Client.new 'sunpower' unless options[:dry_run]
+      data = [{ series: 'production',
+                values: { value: power['CurrentProduction'].to_f },
+                timestamp: (Time.parse power['Date']).to_i }]
+      influxdb.write_points(data) unless options[:dry_run]
     end
   end
 end
