@@ -57,7 +57,7 @@ class Sunpower < RecorderBotBase
 
   no_commands do
     def main
-      power = with_rescue([RestClient::GatewayTimeout, RestClient::Exceptions::OpenTimeout, RestClient::InternalServerError], @logger, retries: 6) do |_try|
+      power = with_rescue([Errno::ECONNRESET, RestClient::GatewayTimeout, RestClient::Exceptions::OpenTimeout, RestClient::InternalServerError], @logger, retries: 6) do |_try|
         authorization = authorize
         get_current_power authorization
       end
