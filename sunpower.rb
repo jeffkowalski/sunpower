@@ -9,11 +9,13 @@ class Sunpower < RecorderBotBase
     def authorize
       sunpower_credentials = load_credentials
 
-      response = RestClient.post 'https://edp-api.edp.sunpower.com/v1/auth/okta/signin',
-                                 sunpower_credentials.to_json,
-                                 {
-                                   Content_Type: 'application/json; charset=utf-8'
-                                 }
+      response = RestClient::Request.execute(
+        method: :post,
+        url: 'https://edp-api.edp.sunpower.com/v1/auth/okta/signin',
+        payload: sunpower_credentials.to_json,
+        headers: { Content_Type: 'application/json; charset=utf-8' },
+        verify_ssl: false
+      )
 
       authorization = JSON.parse response
       @logger.debug authorization
@@ -29,12 +31,16 @@ class Sunpower < RecorderBotBase
         query: 'query FetchCurrentPower($siteKey: String!) {currentPower(siteKey: $siteKey) { production, timestamp }}'
       }].to_json
 
-      response = RestClient.post 'https://edp-api-graphql.edp.sunpower.com/graphql',
-                                 change_query,
-                                 {
-                                   Authorization: "Bearer #{authorization['access_token']}",
-                                   Content_Type: 'application/json; charset=utf-8'
-                                 }
+      response = RestClient::Request.execute(
+        method: :post,
+        url: 'https://edp-api-graphql.edp.sunpower.com/graphql',
+        payload: change_query,
+        headers: {
+          Authorization: "Bearer #{authorization['access_token']}",
+          Content_Type: 'application/json; charset=utf-8'
+        },
+        verify_ssl: false
+      )
 
       @logger.debug response.headers
       @logger.info response
